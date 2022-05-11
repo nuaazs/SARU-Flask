@@ -15,6 +15,8 @@
 import ants
 import numpy as np
 import torch
+from PIL import Image
+import torchvision.transforms as transforms
 
 def preprocess_dcm(dcm_file_path):
     img = ants.image_read(dcm_file_path)
@@ -22,3 +24,15 @@ def preprocess_dcm(dcm_file_path):
     tensor_img = torch.Tensor(npy)
     print(tensor_img.shape)
     return tensor_img
+
+
+def preprocess_img(img_file_path):
+    A = Image.open(img_file_path).convert('L')
+    newsize = (256, 256)
+    A = A.resize(newsize)
+    trans=transforms.Compose([transforms.ToTensor(),transforms.Normalize((0.5,), (0.5,))])
+    A = trans(A)
+    A = torch.unsqueeze(A,0)
+    return A
+
+    

@@ -15,8 +15,8 @@
 import os
 import wget
 
-def save_dcm_from_file(file, patient, receive_path):
-    """save wav file from post request.
+def save_from_file(file, patient, receive_path, extend="png"):
+    """save file from post request.
 
     Args:
         file (request.file): dcm file.
@@ -31,12 +31,12 @@ def save_dcm_from_file(file, patient, receive_path):
     patient_filelist = os.listdir(patient_dir)
     dicom_number = len(patient_filelist) + 1
     # receive wav file and save it to  ->  <receive_path>/<spk_id>/raw_?.webm
-    save_path_dcm = os.path.join(patient_dir, f"raw_{dicom_number}.dcm")
+    save_path_dcm = os.path.join(patient_dir, f"raw_{dicom_number}.{extend}")
     file.save(save_path_dcm)
     return save_path_dcm, dicom_number
 
-def save_dcm_from_url(url, spk, receive_path):
-    """save wav file from post request.
+def save_from_url(url, spk, receive_path, extend="png"):
+    """save file from post request.
 
     Args:
         file (request.file): dcm file.
@@ -52,7 +52,7 @@ def save_dcm_from_url(url, spk, receive_path):
     patient_filelist = os.listdir(patient_dir)
     patient_number = len(patient_filelist) + 1
     # receive wav file and save it to  ->  <receive_path>/<spk_id>/raw_?.dcm
-    save_name = f"raw_{patient_number}.dcm"
+    save_name = f"raw_{patient_number}.{extend}"
     if url.startswith("local:"):
         save_path = url.replace("local:", "")
     else:
