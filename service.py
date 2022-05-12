@@ -13,12 +13,12 @@ import numpy as np
 import pickle
 import os
 import matplotlib.pyplot as plt
-from PIL import Image
+from utils.postpreprocess import save_image,getBase64
 # SpeechBrain
 
 
 # utils
-from utils.save import save_from_url,save_from_file
+from utils.save import save_from_url,save_from_base64,save_from_file
 from utils.preprocess import preprocess_dcm,preprocess_img
 from utils.network import net
 
@@ -80,24 +80,30 @@ def trans(test_type):
         logger.info(f"@ -> Start Translating ... ")
        
         # get request.files
-        patient_id = flask.request.form.get("patient_id")
+        patient_id = flask.request.form.get("patient_id","test")
 
 
-        if test_type == "file":
-            new_file = request.files["file"]
-            filepath,_ = save_from_file(new_file,patient_id,os.path.join(cfg.SAVE_PATH,"raw","png"))
+        if test_type == "base64":
+            base_64_file = request.form.get("file")
+            filepath,_ = save_from_base64(base_64_file,patient_id,os.path.join(cfg.SAVE_PATH,"raw","png"))
+        elif test_type == "file":
+            base_64_file = request.files.get("file")
+            filepath,_ = save_from_file(base_64_file,patient_id,os.path.join(cfg.SAVE_PATH,"raw","png"))
+            
         elif test_type == "url":
-            new_url =request.form.get("url")
+            new_url =request.form.get("url","https://shengbucket.oss-cn-hangzhou.aliyuncs.com/files/preprocess_%E5%8E%8B%E7%BC%A9%E5%90%8E.png")
             filepath,_ = save_from_url(new_url,patient_id,os.path.join(cfg.SAVE_PATH,"raw","png"))
         start_time = time.time()
         # Preprocess: vad + upsample to 16k + self test
         input_tensor = preprocess_img(filepath)
         logger.info(f"\t -> Input shape: {input_tensor.shape}, Starting translating ...")
-        mr_img_tensor = net(input_tensor)[0][0]
+        mr_img_tensor = net(input_tensor)
         logger.info(f"\t -> Output shape: {mr_img_tensor.shape}, Starting translating ...")
 
-        npy_result = mr_img_tensor.detach().numpy()
-        Image.fromarray(np.uint8(npy_result*255)).convert('RGB').save("test.png")
+        image_path = save_image(mr_img_tensor,"test.png")
+        base64_result = getBase64(image_path)
+        # npy_result = mr_img_tensor.detach().numpy()
+        # Image.fromarray(np.uint8(npy_result*255)).save("test.png")
 
         end_time = time.time()
         time_used = end_time - start_time
@@ -106,7 +112,7 @@ def trans(test_type):
         response = {
             "code": 2000,
             "status": "success",
-            #"mr_img": mr_img_tensor.detach().numpy(),
+            "mr_img": base64_result,
             "err_msg": "null"
         }
         print(response)
@@ -114,5 +120,5 @@ def trans(test_type):
 
 
 if __name__ == "__main__":
-    app.run(host='127.0.0.1', threaded=True, port=8175, debug=True,)
+    app.run(host='127.0.0.1', threaded=True, port=8176, debug=True,)
     # host="0.0.0.0"
